@@ -20,7 +20,11 @@ class Stegno:
                 for i in range(3):  # For RGB channels
                     if data_index < len(data):
                         # Modify LSB of the pixel safely
-                        pixel[i] = (pixel[i] & ~1) | int(data[data_index])  # Set LSB
+                        new_value = (pixel[i] & ~1) | int(data[data_index])  # Set LSB
+                        if new_value < 0 or new_value > 255:
+                            st.error("Pixel value out of bounds.")
+                            return None
+                        pixel[i] = new_value
                         data_index += 1
                 img_data[row, col] = tuple(pixel)
                 if data_index >= len(data):  # Stop if all data is encoded
