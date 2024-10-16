@@ -55,7 +55,7 @@ option = st.selectbox("Choose an action:", ["Encode", "Decode"])
 if option == "Encode":
     uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
     if uploaded_file is not None:
-        image = Image.open(uploaded_file)
+        image = Image.open(uploaded_file).convert('RGB')  # Ensure the image is in RGB format
         st.image(image, caption='Uploaded Image', use_column_width=True)
 
         message = st.text_area("Enter the message to hide:")
@@ -71,7 +71,7 @@ if option == "Encode":
 elif option == "Decode":
     uploaded_file = st.file_uploader("Upload an encoded image", type=["png", "jpg", "jpeg"])
     if uploaded_file is not None:
-        image = Image.open(uploaded_file)
+        image = Image.open(uploaded_file).convert('RGB')  # Ensure the image is in RGB format
         st.image(image, caption='Uploaded Encoded Image', use_column_width=True)
 
         if st.button("Decode"):
