@@ -1,229 +1,127 @@
-from tkinter import *
-from tkinter import ttk
-import tkinter.filedialog
-from PIL import ImageTk, Image
-from tkinter import messagebox
+import streamlit as st
+from PIL import Image
+from io import BytesIO
 import os
 
-class Stegno:
-    def main(self, root):
-        root.title('Image Steganography')
-        root.geometry('500x600')
-        root.resizable(width=False, height=False)
-        f = Frame(root)
+class StegnoStreamlit:
 
-        title = Label(f, text='Image Steganography')
-        title.config(font=('courier', 33))
-        title.grid(pady=10)
+    def main(self):
+        st.title("Image Steganography")
 
-        b_encode = Button(f, text="Encode", command=lambda: self.frame1_encode(f), padx=14)
-        b_encode.config(font=('courier', 14))
-        b_encode.grid(pady=12)
+        # Main page with Encode/Decode buttons
+        option = st.selectbox("Choose an action", ["Encode", "Decode"])
 
-        b_decode = Button(f, text="Decode", command=lambda: self.frame1_decode(f), padx=14)
-        b_decode.config(font=('courier', 14))
-        b_decode.grid(pady=12)
+        if option == "Encode":
+            self.frame1_encode()
+        elif option == "Decode":
+            self.frame1_decode()
 
-        f.grid()
-        root.grid_rowconfigure(1, weight=1)
-        root.grid_columnconfigure(0, weight=1)
+    def frame1_decode(self):
+        st.subheader("Decode hidden text from an image")
+        uploaded_file = st.file_uploader("Select an image to decode", type=["png", "jpeg", "jpg"])
 
-    def frame1_decode(self, f):
-        f.destroy()
-        d_f2 = Frame(root)
-        
-        label_art = Label(d_f2, text='Select Image with Hidden Text:')
-        label_art.config(font=('courier', 18))
-        label_art.grid()
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            st.image(image, caption="Selected Image", use_column_width=True)
 
-        bws_button = Button(d_f2, text='Select', command=lambda: self.frame2_decode(d_f2))
-        bws_button.config(font=('courier', 18))
-        bws_button.grid()
+            hidden_data = self.decode(image)
+            st.write("Hidden data is:")
+            st.text_area("Decoded Text", hidden_data)
 
-        back_button = Button(d_f2, text='Cancel', command=lambda: self.home(d_f2))
-        back_button.config(font=('courier', 18))
-        back_button.grid(pady=15)
+    def frame1_encode(self):
+        st.subheader("Encode text into an image")
+        uploaded_file = st.file_uploader("Select an image to encode", type=["png", "jpeg", "jpg"])
 
-        d_f2.grid()
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            st.image(image, caption="Selected Image", use_column_width=True)
 
-    def frame2_decode(self, d_f2):
-        d_f3 = Frame(root)
-        
-        myfile = tkinter.filedialog.askopenfilename(filetypes=[('png', '*.png'), ('jpeg', '*.jpeg'), ('jpg', '*.jpg'), ('All Files', '*.*')])
-        
-        if not myfile:
-            messagebox.showerror("Error", "You have selected nothing!")
-            return
-        
-        myimg = Image.open(myfile)
-        
-        hidden_data = self.decode(myimg)
-        
-        l2 = Label(d_f3, text='Hidden Data:')
-        l2.config(font=('courier', 18))
-        l2.grid(pady=10)
+            text_data = st.text_area("Enter the message to hide")
+            if st.button("Encode"):
+                if text_data:
+                    new_img = self.encode_enc(image, text_data)
+                    if new_img:
+                        buf = BytesIO()
+                        new_img.save(buf, format="PNG")
+                        byte_im = buf.getvalue()
+                        st.download_button(
+                            label="Download Encoded Image",
+                            data=byte_im,
+                            file_name="image_with_hidden_text.png",
+                            mime="image/png"
+                        )
+                        st.success("Encoding Successful!")
+                else:
+                    st.error("Please enter some text to encode.")
 
-        text_area = Text(d_f3, width=50, height=10)
-        text_area.insert(INSERT, hidden_data)
-        text_area.configure(state='disabled')
-        text_area.grid()
-
-        back_button = Button(d_f3, text='Cancel', command=lambda: self.home(d_f3))
-        back_button.config(font=('courier', 11))
-        back_button.grid(pady=15)
-
-        d_f3.grid(row=1)
-        
     def decode(self, image):
         data = ''
-        
         imgdata = iter(image.getdata())
-        
+
         while True:
             pixels = [value for value in imgdata.__next__()[:3] +
                       imgdata.__next__()[:3] +
                       imgdata.__next__()[:3]]
             binstr = ''
             for i in pixels[:8]:
-                binstr += '0' if i % 2 == 0 else '1'
+                if i % 2 == 0:
+                    binstr += '0'
+                else:
+                    binstr += '1'
 
             data += chr(int(binstr, 2))
-
             if pixels[-1] % 2 != 0:
                 return data
 
-    def frame1_encode(self, f):
-        f.destroy()
-        
-        f2 = Frame(root)
-        
-        l1 = Label(f2, text='Select the Image in which you want to hide text:')
-        l1.config(font=('courier', 18))
-        l1.grid()
+    def genData(self, data):
+        newd = []
+        for i in data:
+            newd.append(format(ord(i), '08b'))
+        return newd
 
-        bws_button = Button(f2, text='Select', command=lambda: self.frame2_encode(f2))
-        bws_button.config(font=('courier', 18))
-        bws_button.grid()
+    def modPix(self, pix, data):
+        datalist = self.genData(data)
+        lendata = len(datalist)
+        imdata = iter(pix)
 
-        back_button = Button(f2, text='Cancel', command=lambda: self.home(f2))
-        back_button.config(font=('courier', 18))
-        back_button.grid(pady=15)
+        for i in range(lendata):
+            pixels = [value for value in imdata.__next__()[:3] +
+                      imdata.__next__()[:3] +
+                      imdata.__next__()[:3]]
 
-        f2.grid()
+            for j in range(8):
+                if datalist[i][j] == '0' and pixels[j] % 2 != 0:
+                    pixels[j] -= 1
+                elif datalist[i][j] == '1' and pixels[j] % 2 == 0:
+                    pixels[j] -= 1
 
-    def frame2_encode(self, f2):
-         ep = Frame(root)
-         
-         myfile = tkinter.filedialog.askopenfilename(filetypes=[('png', '*.png'), ('jpeg', '*.jpeg'), ('jpg', '*.jpg'), ('All Files', '*.*')])
-         
-         if not myfile:
-             messagebox.showerror("Error", "You have selected nothing!")
-             return
+            if i == lendata - 1:
+                if pixels[-1] % 2 == 0:
+                    pixels[-1] -= 1
+            else:
+                if pixels[-1] % 2 != 0:
+                    pixels[-1] -= 1
 
-         myimg = Image.open(myfile).convert('RGB')  # Ensure the image is in RGB format
-         myimage = myimg.resize((300, 200))  
-         img = ImageTk.PhotoImage(myimage)
+            pixels = tuple(pixels)
+            yield pixels[:3]
+            yield pixels[3:6]
+            yield pixels[6:9]
 
-         l3 = Label(ep, text='Selected Image')
-         l3.config(font=('courier', 18))
-         l3.grid()
+    def encode_enc(self, image, data):
+        new_image = image.copy()
+        w = new_image.size[0]
+        (x, y) = (0, 0)
 
-         panel = Label(ep, image=img)
-         panel.image = img
-         panel.grid()
+        for pixel in self.modPix(new_image.getdata(), data):
+            new_image.putpixel((x, y), pixel)
+            if x == w - 1:
+                x = 0
+                y += 1
+            else:
+                x += 1
 
-         l2 = Label(ep, text='Enter the message')
-         l2.config(font=('courier', 18))
-         l2.grid(pady=15)
+        return new_image
 
-         text_area = Text(ep, width=50, height=10)
-         text_area.grid()
-
-         encode_button = Button(ep, text='Cancel', command=lambda: self.home(ep))
-         encode_button.config(font=('courier', 11))
-
-         back_button = Button(ep, text='Encode',
-                              command=lambda: [self.enc_fun(text_area, myimg), self.home(ep)])
-         
-         back_button.config(font=('courier', 11))
-         
-         back_button.grid(pady=15)
-         
-         encode_button.grid()
-         
-         ep.grid(row=1)
-         
-         f2.destroy()
-
-    def enc_fun(self,text_area,myimg):
-       data = text_area.get("1.0", "end-1c")
-       
-       if len(data) == 0:
-           messagebox.showinfo("Alert", "Kindly enter text in TextBox")
-           return
-
-       newimg = myimg.copy()
-       self.encode_enc(newimg,data)
-
-       save_path = tkinter.filedialog.asksaveasfilename(defaultextension=".png",
-                                                         filetypes=[('PNG files (*.png)', '*.png')])
-       if save_path:
-           newimg.save(save_path)
-           messagebox.showinfo("Success", "Encoding Successful\nFile is saved as {}".format(os.path.basename(save_path)))
-
-    def encode_enc(self,newimg,data):
-       w,h=newimg.size
-       (x,y)=(0,0)
-
-       for pixel in self.modPix(newimg.getdata(),data):
-           newimg.putpixel((x,y),pixel)
-           if (x==w-1):
-               x=0
-               y+=1
-           else:
-               x+=1
-
-    def modPix(self,pix,data):
-       datalist=self.genData(data)
-       lendata=len(datalist)
-       imdata=iter(pix)
-
-       for i in range(lendata):
-           # Extracting 3 pixels at a time
-           pix=[value for value in imdata.__next__()[:3] +
-                imdata.__next__()[:3] +
-                imdata.__next__()[:3]]
-
-           for j in range(0,8):
-               if (datalist[i][j]=='0') and (pix[j]%2!=0):
-                   pix[j]-=1
-
-               elif (datalist[i][j]=='1') and (pix[j]%2==0):
-                   pix[j]-=1
-
-           if (i==lendata-1):
-               if (pix[-1]%2==0):
-                   pix[-1]-=1
-           else:
-               if (pix[-1]%2!=0):
-                   pix[-1]-=1
-
-           pix=tuple(pix)
-           yield pix[0:3]
-           yield pix[3:6]
-           yield pix[6:9]
-
-    def genData(self,data):
-       newd=[]
-       for i in data:
-           newd.append(format(ord(i),'08b'))
-       return newd
-
-    def home(self, frame):
-            frame.destroy()
-            self.main(root)
-
-root = Tk()
-o = Stegno()
-o.main(root)
-root.mainloop()
+# Run the app
+stegno_app = StegnoStreamlit()
+stegno_app.main()
