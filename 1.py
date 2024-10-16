@@ -20,8 +20,7 @@ class Stegno:
             img_data[row, col] = tuple(pixel)
             if data_index >= len(data):  # Stop if all data is encoded
                 break
-    
-    return Image.fromarray(img_data)
+        return Image.fromarray(img_data)
 
     def decode(self, image):
         img_data = np.array(image)
