@@ -4,7 +4,7 @@ import numpy as np
 
 class Stegno:
     def encode(self, image, message):
-        # Convert message to binary and add end marker
+        # Convert message to binary and add an end marker
         data = ''.join(format(ord(i), '08b') for i in message) + '1111111111111110'  # End marker
         img_data = np.array(image)
 
@@ -19,7 +19,7 @@ class Stegno:
                 pixel = list(img_data[row, col])
                 for i in range(3):  # For RGB channels
                     if data_index < len(data):
-                        # Modify LSB of the pixel
+                        # Modify LSB of the pixel safely
                         pixel[i] = (pixel[i] & ~1) | int(data[data_index])  # Set LSB
                         data_index += 1
                 img_data[row, col] = tuple(pixel)
