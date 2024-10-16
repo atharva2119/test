@@ -155,13 +155,13 @@ class Stegno:
         
         bws_button.grid()
 
-         back_button = Button(f2, text='Cancel', command=lambda: self.home(f2))
+        back_button = Button(f2, text='Cancel', command=lambda: self.home(f2))
          
-         back_button.config(font=('courier', 18))
+        back_button.config(font=('courier', 18))
          
-         back_button.grid(pady=15)
+        back_button.grid(pady=15)
 
-         f2.grid()
+        f2.grid()
 
     def frame2_encode(self, f2):
          ep = Frame(root)
