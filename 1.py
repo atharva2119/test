@@ -2,18 +2,12 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import streamlit as st
-import time
 from collections import deque
 
-# Cache MediaPipe model loading to avoid reloading on each interaction
-@st.experimental_singleton
-def load_hand_model():
-    mpHands = mp.solutions.hands
-    hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.65)
-    mpDraw = mp.solutions.drawing_utils
-    return hands, mpDraw
-
-hands, mpDraw = load_hand_model()
+# Initialize MediaPipe Hands
+mpHands = mp.solutions.hands
+hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.65)
+mpDraw = mp.solutions.drawing_utils
 
 # Set up color points
 bpoints = [deque(maxlen=1024)]
@@ -34,7 +28,6 @@ paintWindow = np.zeros((471, 636, 3)) + 255
 # Streamlit UI setup
 st.title("Air Canvas - AR Whiteboard")
 st.sidebar.title("Controls")
-
 clear_button = st.sidebar.button("Clear Canvas")
 color_choice = st.sidebar.selectbox("Choose Color", ["Blue", "Green", "Red", "Yellow"])
 
@@ -42,21 +35,15 @@ color_choice = st.sidebar.selectbox("Choose Color", ["Blue", "Green", "Red", "Ye
 color_map = {"Blue": 0, "Green": 1, "Red": 2, "Yellow": 3}
 colorIndex = color_map.get(color_choice)
 
-# Initialize webcam capture
-cap = cv2.VideoCapture(0)
+# Setup file uploader for webcam image frames (since Streamlit can't directly capture from webcam)
+uploaded_file = st.sidebar.file_uploader("Upload a webcam image frame", type=["jpg", "jpeg", "png"])
 
-# Set webcam resolution lower for better performance
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
-# Main loop to process frames
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        st.write("Error accessing webcam.")
-        break
-
-    # Flip the frame horizontally for a mirror effect
+if uploaded_file is not None:
+    # Convert the uploaded file into an OpenCV image
+    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+    frame = cv2.imdecode(file_bytes, 1)
+    
+    # Flip the image horizontally for a selfie-view display
     frame = cv2.flip(frame, 1)
     framergb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -75,7 +62,6 @@ while True:
         fore_finger = (landmarks[8][0], landmarks[8][1])
         thumb = (landmarks[4][0], landmarks[4][1])
 
-        # If thumb is close to the index finger, consider it a gesture to change color
         if (thumb[1] - fore_finger[1] < 30):
             bpoints.append(deque(maxlen=512))
             blue_index += 1
@@ -86,16 +72,14 @@ while True:
             ypoints.append(deque(maxlen=512))
             yellow_index += 1
 
-        # Check for Clear Canvas button press
         elif fore_finger[1] <= 65:
-            if clear_button:
+            if clear_button:  # Clear Button functionality
                 bpoints.clear()
                 gpoints.clear()
                 rpoints.clear()
                 ypoints.clear()
                 paintWindow[:] = 255
 
-        # Add points to the corresponding deque based on selected color
         else:
             if colorIndex == 0:
                 bpoints[blue_index].appendleft(fore_finger)
@@ -116,17 +100,12 @@ while True:
                 cv2.line(frame, points[i][j][k - 1], points[i][j][k], colors[i], 2)
                 cv2.line(paintWindow, points[i][j][k - 1], points[i][j][k], colors[i], 2)
 
-    # Show the webcam frame and canvas using Streamlit's image function
+    # Display the frame and canvas using Streamlit's image function
     st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB")
     st.image(paintWindow[:, :, ::-1])  # Convert BGR to RGB for display
+else:
+    st.write("Please upload a frame from your webcam.")
 
-    # Add a Stop button to exit the loop
-    if st.button('Stop'):
-        break
-
-    # Add a small delay to reduce CPU/GPU usage
-    time.sleep(0.1)
-
-# Release the webcam and close OpenCV windows
-cap.release()
-cv2.destroyAllWindows()
+# Option to stop the app
+if st.button('Stop'):
+    st.stop()
