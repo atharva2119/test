@@ -4,25 +4,26 @@ import numpy as np
 
 class Stegno:
     def encode(self, image, message):
-        data = ''.join(format(ord(i), '08b') for i in message)
-        img_data = np.array(image)
-        
-        # Ensure the message can fit in the image
-        if len(data) > img_data.size:
-            st.error("Message is too long to encode in this image.")
-            return None
-        
-        data_index = 0
-        for row in range(img_data.shape[0]):
-            for col in range(img_data.shape[1]):
-                pixel = list(img_data[row, col])
-                for i in range(3):  # For RGB channels
-                    if data_index < len(data):
-                        pixel[i] = (pixel[i] & ~1) | int(data[data_index])  # Set LSB
-                        data_index += 1
-                img_data[row, col] = tuple(pixel)
-        
-        return Image.fromarray(img_data)
+    data = ''.join(format(ord(i), '08b') for i in message) + '1111111111111110'  # End marker
+    img_data = np.array(image)
+    
+    if len(data) > img_data.size * 3:  # Check if data can fit
+        st.error("Message is too long to encode in this image.")
+        return None
+    
+    data_index = 0
+    for row in range(img_data.shape[0]):
+        for col in range(img_data.shape[1]):
+            pixel = list(img_data[row, col])
+            for i in range(3):  # For RGB channels
+                if data_index < len(data):
+                    pixel[i] = (pixel[i] & ~1) | int(data[data_index])  # Set LSB
+                    data_index += 1
+            img_data[row, col] = tuple(pixel)
+            if data_index >= len(data):  # Stop if all data is encoded
+                break
+    
+    return Image.fromarray(img_data)
 
     def decode(self, image):
         img_data = np.array(image)
