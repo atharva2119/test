@@ -4,10 +4,12 @@ import numpy as np
 
 class Stegno:
     def encode(self, image, message):
+        # Convert message to binary and add end marker
         data = ''.join(format(ord(i), '08b') for i in message) + '1111111111111110'  # End marker
         img_data = np.array(image)
 
-        if len(data) > img_data.size * 3:  # Check if data can fit
+        # Check if the message can fit in the image
+        if len(data) > img_data.size * 3:  # Each pixel has 3 channels (RGB)
             st.error("Message is too long to encode in this image.")
             return None
 
@@ -17,6 +19,7 @@ class Stegno:
                 pixel = list(img_data[row, col])
                 for i in range(3):  # For RGB channels
                     if data_index < len(data):
+                        # Modify LSB of the pixel
                         pixel[i] = (pixel[i] & ~1) | int(data[data_index])  # Set LSB
                         data_index += 1
                 img_data[row, col] = tuple(pixel)
@@ -44,6 +47,7 @@ class Stegno:
 
         return message.rstrip('\x00')
 
+# Streamlit UI
 st.title("Image Steganography")
 
 option = st.selectbox("Choose an action:", ["Encode", "Decode"])
