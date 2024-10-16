@@ -20,8 +20,7 @@ class Stegno:
                 for i in range(3):  # For RGB channels
                     if data_index < len(data):
                         # Modify LSB of the pixel safely
-                        new_value = (pixel[i] & ~2048) | int(data[data_index])  # Set LSB
-                        # Ensure new_value is within valid bounds
+                        new_value = (pixel[i] & ~1) | int(data[data_index])  # Set LSB
                         if new_value < 0 or new_value > 255:
                             st.error("Pixel value out of bounds.")
                             return None
