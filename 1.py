@@ -7,13 +7,6 @@ from io import BytesIO
 import os
 
 class Stegno:
-    art = '''by'''
-    art2 = '''
-    ATHARVA SAWANT
-    SOHAM RAUT
-    BHAVORMI SOMAIYA'''
-    output_image_size = 0
-
     def main(self, root):
         root.title('Image Steganography')
         root.geometry('500x600')
@@ -32,14 +25,6 @@ class Stegno:
         b_decode.config(font=('courier', 14))
         b_decode.grid(pady=12)
 
-        ascii_art = Label(f, text=self.art)
-        ascii_art.config(font=('courier', 20))
-        ascii_art.grid(row=4, pady=10)
-
-        ascii_art2 = Label(f, text=self.art2)
-        ascii_art2.config(font=('courier', 20, 'bold'))
-        ascii_art2.grid(row=6, pady=4)
-
         f.grid()
         root.grid_rowconfigure(1, weight=1)
         root.grid_columnconfigure(0, weight=1)
@@ -51,10 +36,7 @@ class Stegno:
     def frame1_decode(self, f):
         f.destroy()
         d_f2 = Frame(root)
-        label_art = Label(d_f2, text='٩(^‿^)۶')
-        label_art.config(font=('courier', 90))
-        label_art.grid(row=1, pady=50)
-
+        
         l1 = Label(d_f2, text='Select Image with Hidden Text:')
         l1.config(font=('courier', 18))
         l1.grid()
@@ -94,7 +76,7 @@ class Stegno:
 
         hidden_data = self.decode(myimg)
         
-        l2 = Label(d_f3, text='Hidden data is:')
+        l2 = Label(d_f3, text='Hidden Data:')
         l2.config(font=('courier', 18))
         l2.grid(pady=10)
 
@@ -113,7 +95,7 @@ class Stegno:
         back_button.grid(pady=15)
 
         d_f3.grid(row=1)
-        
+
     def decode(self, image):
         data = ''
         
@@ -137,12 +119,6 @@ class Stegno:
         
         f2 = Frame(root)
         
-        label_art = Label(f2, text='\'\(°Ω°)/\'')
-        
-        label_art.config(font=('courier', 70))
-        
-        label_art.grid(row=1, pady=50)
-
         l1 = Label(f2, text='Select the Image in which \nyou want to hide text:')
         
         l1.config(font=('courier', 18))
@@ -155,13 +131,13 @@ class Stegno:
         
         bws_button.grid()
 
-        back_button = Button(f2, text='Cancel', command=lambda: self.home(f2))
+         back_button = Button(f2, text='Cancel', command=lambda: self.home(f2))
          
-        back_button.config(font=('courier', 18))
+         back_button.config(font=('courier', 18))
          
-        back_button.grid(pady=15)
+         back_button.grid(pady=15)
 
-        f2.grid()
+         f2.grid()
 
     def frame2_encode(self, f2):
          ep = Frame(root)
