@@ -1,4 +1,4 @@
-opencv-python-headless
-mediapipe
-numpy
 streamlit
+pandas
+numpy
+scikit-learn
