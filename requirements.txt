@@ -1,5 +1,6 @@
-streamlit>=1.30
-streamlit-webrtc>=0.47
 opencv-python>=4.9
 mediapipe>=0.10
+streamlit>=1.30
+streamlit-webrtc>=0.47
 numpy>=1.26
+pyopengl>=3.1.6
