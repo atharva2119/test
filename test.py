@@ -99,11 +99,12 @@ class HandTrackerVideoTransformer(VideoTransformerBase):
                 for k in range(1, len(points[i][j])):
                     if points[i][j][k - 1] is None or points[i][j][k] is None:
                         continue
+                    # Draw lines on the canvas
                     cv2.line(paintWindow, points[i][j][k - 1], points[i][j][k], colors[i], 2)
 
-        # Display the frame and the canvas
-        frame_rgb = cv2.addWeighted(frame_rgb, 0.5, paintWindow, 0.5, 0)
-        return av.VideoFrame.from_ndarray(frame_rgb, format="bgr24")
+        # Combine the frame and the canvas
+        combined_frame = np.where(paintWindow != 255, paintWindow, frame_rgb)
+        return av.VideoFrame.from_ndarray(combined_frame, format="bgr24")
 
 
 # Start WebRTC streamer
