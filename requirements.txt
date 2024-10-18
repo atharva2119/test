@@ -1,5 +1,5 @@
 streamlit>=1.30
 streamlit-webrtc>=0.47
-opencv-python-headless>=4.9  # Use headless version to avoid X server issues
+opencv-python-headless>=4.9
 mediapipe>=0.10
 numpy>=1.26
