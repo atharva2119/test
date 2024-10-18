@@ -100,4 +100,3 @@ class HandTrackerVideoTransformer(VideoTransformerBase):
 
 # Start WebRTC streamer
 webrtc_streamer(key="canvas", video_transformer_factory=HandTrackerVideoTransformer)
-
