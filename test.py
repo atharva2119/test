@@ -1,9 +1,9 @@
-import cv2
 import numpy as np
-import mediapipe as mp
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import mediapipe as mp
 from collections import deque
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import av
 
 # Initialize MediaPipe Hands
 mpHands = mp.solutions.hands
@@ -33,17 +33,21 @@ color_choice = st.sidebar.selectbox("Choose Color", ["Blue", "Green", "Red", "Ye
 color_map = {"Blue": 0, "Green": 1, "Red": 2, "Yellow": 3}
 colorIndex = color_map.get(color_choice)
 
-# Define video transformer for WebRTC streaming
+# Create a blank canvas
+paintWindow = np.ones((471, 636, 3), dtype=np.uint8) * 255  # White canvas
+
+
+# Define the video transformer
 class HandTrackerVideoTransformer(VideoTransformerBase):
     def __init__(self):
         super().__init__()
 
-    def transform(self, frame):
-        global blue_index, green_index, red_index, yellow_index, bpoints, gpoints, rpoints, ypoints
+    def transform(self, frame: av.VideoFrame):
+        global blue_index, green_index, red_index, yellow_index, bpoints, gpoints, rpoints, ypoints, paintWindow
 
         # Convert frame to RGB
-        frame_rgb = cv2.cvtColor(frame.to_ndarray(), cv2.COLOR_BGR2RGB)
-        
+        frame_rgb = frame.to_ndarray(format="bgr24")
+
         # Process the frame to detect hands
         result = hands.process(frame_rgb)
 
@@ -76,6 +80,7 @@ class HandTrackerVideoTransformer(VideoTransformerBase):
                 gpoints.clear()
                 rpoints.clear()
                 ypoints.clear()
+                paintWindow[:] = 255  # Clear the canvas
 
             else:
                 if colorIndex == 0:
@@ -94,9 +99,16 @@ class HandTrackerVideoTransformer(VideoTransformerBase):
                 for k in range(1, len(points[i][j])):
                     if points[i][j][k - 1] is None or points[i][j][k] is None:
                         continue
-                    cv2.line(frame_rgb, points[i][j][k - 1], points[i][j][k], colors[i], 2)
+                    cv2.line(paintWindow, points[i][j][k - 1], points[i][j][k], colors[i], 2)
 
-        return cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+        # Display the frame and the canvas
+        frame_rgb = cv2.addWeighted(frame_rgb, 0.5, paintWindow, 0.5, 0)
+        return av.VideoFrame.from_ndarray(frame_rgb, format="bgr24")
+
 
 # Start WebRTC streamer
-webrtc_streamer(key="canvas", video_transformer_factory=HandTrackerVideoTransformer)
+webrtc_streamer(
+    key="canvas",
+    video_frame_callback=HandTrackerVideoTransformer(),
+    sendback_audio=False
+)
