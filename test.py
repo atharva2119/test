@@ -1,50 +1,46 @@
 import streamlit as st
-import openai
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Set your OpenAI API key
-openai.api_key = "your-openai-api-key"
+# Load the pretrained model and tokenizer
+model_name = "microsoft/DialoGPT-medium"  # You can replace this with other open-source conversational models
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
 
 # Initialize memory for the chatbot
 conversation_memory = []
 
-# Function to interact with GPT (OpenAI)
-def generate_response(prompt):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=150,
-        temperature=0.7
-    )
-    return response['choices'][0]['text'].strip()
+# Function to generate a response
+def generate_response(user_input):
+    global conversation_memory
+    
+    # Tokenize the input and append to the memory
+    inputs = tokenizer.encode(" ".join(conversation_memory + [user_input]), return_tensors="pt")
+    
+    # Generate the response
+    outputs = model.generate(inputs, max_length=1000, pad_token_id=tokenizer.eos_token_id, top_p=0.9, temperature=0.7)
+    response = tokenizer.decode(outputs[:, inputs.shape[-1]:][0], skip_special_tokens=True)
+    
+    # Add the user input and response to the memory
+    conversation_memory.append(user_input)
+    conversation_memory.append(response)
+    
+    return response
 
 # Streamlit UI
 st.title("General Purpose Chatbot")
-st.markdown("This chatbot has interactivity and memory capabilities.")
+st.markdown("This chatbot uses an open-source conversational model.")
 
-# User input
 def main():
     global conversation_memory
-
+    
     user_input = st.text_input("You:", "", key="user_input")
-
+    
     if user_input:
-        # Add user query to memory
-        conversation_memory.append({"role": "user", "content": user_input})
-
-        # Prepare the prompt
-        prompt = "The following is a conversation with a chatbot.\n"
-        for message in conversation_memory:
-            prompt += f"{message['role']}: {message['content']}\n"
-        prompt += "assistant:"
-
-        # Generate the response
-        response = generate_response(prompt)
-
-        # Display the response
+        # Generate response
+        response = generate_response(user_input)
+        
+        # Display response
         st.text_area("Chatbot:", response, height=200)
-
-        # Add response to memory
-        conversation_memory.append({"role": "assistant", "content": response})
 
 if __name__ == "__main__":
     main()
